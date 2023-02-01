@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Level.h"
 #include <string>
+#include <fstream>
+#include <cstring>
 #include <iostream>
 
 /*
@@ -11,67 +13,97 @@ allocate a simple character array. We then read through again, filling in
 the dynamically allocated character array.
 
 */
-Level::Level(std::ifstream& levelFile) {
-	using namespace std;
-	string line;
-	int lines = 0;
-
-	//We loop through all the lines
-	//looking for the longest line
-	while (getline(levelFile, line)) {
-		lines++;
-		if (line.size() > maxLine) maxLine = line.size();
+Level::Level() {
+	
+	ROW = COL = playerRow = playerCol = 0;
+	memset(gameMap, 0, sizeof(gameMap)); // memset definition: sets the first num bytes of the block of memory 
+					     // pointed by ptr to the specified value (interpreted as an unsigned char)
 	}
-
-
-	/*
-	We got to the end of the file while looking for the longest line.
-	In order to use it again, we need to clear the eof flag, and then
-	point back to the beginning of the file. Then we can treat it like
-	we had just newly opened it.
-	*/
-	levelFile.clear();
-	levelFile.seekg(0, ios::beg);
-
-
-	cout << maxLine << " " << lines << " " << (maxLine*lines) << endl;
-
-	map = new char[maxLine * lines];
-	lines = 0;
-
-	//We loop through all the lines
-	//We print the lines to the beginning of 
-	//the corresponding line in the dynamic array
-	//that represents the level
-	while (getline(levelFile, line)) {
-		int i;
-		for (i = 0; i < line.size(); i++) {
-			map[maxLine * lines + i] = line[i];
-		}
-		//If the map line was short, print spaces
-		for (; i < maxLine; i++) {
-			map[maxLine * lines + i] = ' ';
-		}
-		lines++;
-	}
-	lineCount = lines;
-
-}
-
-
-/*
-
-We draw the board as text.
-
-*/
-void Level::draw()
+void Level::readMapFromFile(const string &fileName)
 {
-	using namespace std;
-	for (int y = 0; y < lineCount; y++) {
-		for (int x = 0; x < maxLine; x++) {
-			cout << map[y*maxLine + x];
+	ifstream file(fileName);
+	if (!file.is_open())
+	{
+		cout<<"Error opening file"<< endl;
+		return;
+	}
+	int row = 0;
+	string line;
+	while (getline(file, line))
+	{
+		if (line.empty())
+			continue;
+		int col = 0;
+		for (int i = 0; i< line.length(); i++)
+		{
+			if(line[i[ == " ")
+				  continue;
+			char c = line[i];
+			gameMap[row][col++] = c;
+			if (c == '@')
+			{
+				playerRow = row;
+				playerCol = col-1;
+			}
+		}
+				  
+		ROW = row + 1;
+		COL = max(COL, col);
+		row++;
+	}
+	file.close();
+}
+void Level::displayMap()
+{
+	for (int i = 0; i < ROW; i++)
+	{
+		for (int j = 0; j < COL; j++)
+		{
+			cout << gameMap[i][j];
 		}
 		cout << endl;
 	}
-
 }
+
+void Level::movePlayer(char direction)
+{
+	int newRow = playerRow, newCol = playerCol;
+	switch (direction)
+	{
+	case 'w':
+		newRow--;
+		break;
+	case 's':
+		newRow++;
+		break;
+	case 'a':
+		newCol--;
+		break;
+	case 'd':
+		newCol++;
+		break;
+	default:
+		cout << "Invalid move" << endl;
+		return;
+	}
+	if (newRow < 0 || newRow >= ROW || newCol < 0 || newCol >= COL || gameMap[newRow][newCol] == '#')
+	{
+		cout << "Invalid move" << endl;
+		return;
+	}
+	if (gameMap[newRow][newCol] == '<')
+	{
+		cout << "Loading next map..." << endl;
+		string nextMap = "level2.txt"; // Sets the next file to read from
+		memset(gameMap, 0, sizeof(gameMap));
+		readMapFromFile(nextMap);
+		playerRow = playerCol = 0;
+		displayMap();
+		return;
+	}
+	gameMap[playerRow][playerCol] = '.';
+	playerRow = newRow;
+	playerCol = newCol;
+	gameMap[playerRow][playerCol] = '@';
+}
+				  {
