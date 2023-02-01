@@ -106,4 +106,3 @@ void Level::movePlayer(char direction)
 	playerCol = newCol;
 	gameMap[playerRow][playerCol] = '@';
 }
-				  {
